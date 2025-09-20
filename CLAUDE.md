@@ -47,10 +47,10 @@ Based on PRD.md, the service will implement:
 ### Data Model
 MySQL table `articles`:
 - id (AUTO_INCREMENT, PRIMARY KEY)
-- title (VARCHAR)
-- url (VARCHAR)
-- publication_date (DATETIME)
-- source (VARCHAR)
+- title (VARCHAR(500), NOT NULL)
+- url (VARCHAR(700), NOT NULL, UNIQUE)
+- publication_date (DATETIME, NULL)
+- source (VARCHAR(100), NOT NULL)
 
 ## Development Guidelines
 
