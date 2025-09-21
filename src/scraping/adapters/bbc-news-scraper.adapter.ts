@@ -70,10 +70,12 @@ export class BbcNewsScraperAdapter implements NewsScraperPort {
       this.logger.log(
         `Successfully scraped ${uniqueArticles.length} articles from BBC News`,
       );
+
       return uniqueArticles;
     } catch (error) {
       this.logger.error('Error scraping BBC News articles', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to scrape BBC News: ${errorMessage}`);
     }
   }
