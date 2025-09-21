@@ -14,7 +14,6 @@ Exercice de codage démontrant un code de qualité, respectant les bonnes pratiq
 - **Backend** : NestJS (Framework Node.js)
 - **Base de données** : MySQL (localhost:3306)
 - **ORM** : Sequelize
-- **Architecture** : Hexagonale (Ports & Adapters)
 
 ### Contraintes techniques
 - MySQL pré-installé localement
@@ -79,7 +78,6 @@ source (VARCHAR - nom du site d'actualité)
 ## 5. Critères de qualité
 
 ### Architecture
-- Respect de l'architecture hexagonale
 - Séparation claire des responsabilités
 - Inversion de dépendances
 

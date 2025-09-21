@@ -1,23 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import { NewsScraperPort } from '../ports/news-scraper.port';
-import { Article } from '../interfaces/article.interface';
+
+export interface ScrapedArticle {
+  title: string;
+  url: string;
+  source: string;
+  publicationDate?: Date;
+}
 
 @Injectable()
-export class BbcNewsScraperAdapter implements NewsScraperPort {
-  private readonly logger = new Logger(BbcNewsScraperAdapter.name);
+export class BbcScraperService {
+  private readonly logger = new Logger(BbcScraperService.name);
   private readonly BBC_NEWS_URL = 'https://www.bbc.com/news';
 
-  async scrapeArticles(): Promise<Article[]> {
+  async scrapeArticles(): Promise<ScrapedArticle[]> {
     try {
       this.logger.log('Starting to scrape BBC News articles');
 
       const response = await axios.get(this.BBC_NEWS_URL, { timeout: 10000 });
-
       const $ = cheerio.load(response.data as string);
-      const articles: Article[] = [];
+      const articles: ScrapedArticle[] = [];
 
+      // Premier sélecteur : titres principaux
       $(
         'h2[data-testid="card-headline"] a, h3[data-testid="card-headline"] a',
       ).each((_, element) => {
@@ -39,6 +44,7 @@ export class BbcNewsScraperAdapter implements NewsScraperPort {
         }
       });
 
+      // Deuxième sélecteur : liens internes avec titres
       $('a[data-testid="internal-link"]').each((_, element) => {
         const $element = $(element);
         const title = $element.find('h2, h3').text().trim();
@@ -62,6 +68,7 @@ export class BbcNewsScraperAdapter implements NewsScraperPort {
         }
       });
 
+      // Supprimer les doublons
       const uniqueArticles = articles.filter(
         (article, index, self) =>
           index === self.findIndex((a) => a.url === article.url),
@@ -73,7 +80,8 @@ export class BbcNewsScraperAdapter implements NewsScraperPort {
       return uniqueArticles;
     } catch (error) {
       this.logger.error('Error scraping BBC News articles', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to scrape BBC News: ${errorMessage}`);
     }
   }
