@@ -13,8 +13,7 @@ export class ArticlesController {
   ): Promise<GetArticlesResponseDto> {
     const page = parseInt(query.page || '1', 10);
     const limit = Math.min(parseInt(query.limit || '10', 10), 100);
-    const source = query.source;
 
-    return this.articlesService.findAll({ page, limit, source });
+    return this.articlesService.find({ page, limit });
   }
 }

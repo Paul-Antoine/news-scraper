@@ -9,7 +9,6 @@ export interface IArticle {
 export interface IPaginationOptions {
   page: number;
   limit: number;
-  source?: string;
 }
 
 export interface IPaginatedResult<T> {

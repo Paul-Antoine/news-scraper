@@ -88,13 +88,12 @@ POST /scrape
 
 #### 2. Récupérer les articles
 ```bash
-GET /articles?page=1&limit=10&source=BBC
+GET /articles?page=1&limit=10
 ```
 
 **Paramètres :**
 - `page` (optionnel) : Numéro de page (défaut: 1)
 - `limit` (optionnel) : Nombre d'articles par page (défaut: 10, max: 100)
-- `source` (optionnel) : Filtrer par source
 
 **Réponse :**
 ```json

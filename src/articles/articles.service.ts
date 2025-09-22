@@ -19,18 +19,24 @@ export class ArticlesService {
     private readonly articleModel: typeof Article,
   ) {}
 
-  async findAll(options: IPaginationOptions): Promise<GetArticlesResponseDto> {
-    const { page, limit, source } = options;
+  async find(options: IPaginationOptions): Promise<GetArticlesResponseDto> {
+    const { page, limit } = options;
     const offset = (page - 1) * limit;
 
-    const whereClause = source ? { source: { [Op.eq]: source } } : {};
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const { rows: articles, count: total } =
       await this.articleModel.findAndCountAll({
-        where: whereClause,
+        where: {
+          publicationDate: {
+            [Op.gte]: sevenDaysAgo,
+            [Op.not]: null,
+          },
+        },
         limit,
         offset,
-        order: [['id', 'DESC']],
+        order: [['publicationDate', 'DESC']], // use index idx_articles_publication_date_desc
       });
 
     const pages = Math.ceil(total / limit);
