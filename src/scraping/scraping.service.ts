@@ -48,11 +48,9 @@ export class ScrapingService {
           const savedArticle = await this.articlesService.create(articleData);
           savedArticles.push(savedArticle);
           savedCount++;
-          this.logger.debug(`Article saved: ${article.title}`);
         } catch (error) {
           if ((error as Error).name === 'SequelizeUniqueConstraintError') {
             duplicatesCount++;
-            this.logger.debug(`Duplicate article skipped: ${article.title}`);
           } else {
             this.logger.error(
               `Failed to save article: ${article.title}`,

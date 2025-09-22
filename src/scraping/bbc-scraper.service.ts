@@ -14,6 +14,16 @@ export class BbcScraperService {
   private readonly logger = new Logger(BbcScraperService.name);
   private readonly BBC_NEWS_URL = 'https://www.bbc.com/news';
 
+  private generateRandomDate(): Date {
+    const now = new Date();
+    const fiveHoursAgo = new Date(now.getTime() - 5 * 60 * 60 * 1000);
+
+    const randomTime = fiveHoursAgo.getTime() +
+      Math.random() * (now.getTime() - fiveHoursAgo.getTime());
+
+    return new Date(randomTime);
+  }
+
   async scrapeArticles(): Promise<ScrapedArticle[]> {
     try {
       this.logger.log('Starting to scrape BBC News articles');
@@ -22,29 +32,9 @@ export class BbcScraperService {
       const $ = cheerio.load(response.data as string);
       const articles: ScrapedArticle[] = [];
 
-      // Premier sélecteur : titres principaux
-      $(
-        'h2[data-testid="card-headline"] a, h3[data-testid="card-headline"] a',
-      ).each((_, element) => {
-        const $element = $(element);
-        const title = $element.text().trim();
-        const relativeUrl = $element.attr('href');
-
-        if (title && relativeUrl) {
-          const url = relativeUrl.startsWith('http')
-            ? relativeUrl
-            : `https://www.bbc.com${relativeUrl}`;
-
-          articles.push({
-            title,
-            url,
-            source: 'BBC News',
-            publicationDate: undefined,
-          });
-        }
-      });
-
-      // Deuxième sélecteur : liens internes avec titres
+      // Select link with title
+      // todo : need to improve this code using "__NEXT_DATA__" json at the end of the BBC News page, contains also publication date
+      // todo : use a dummy date for now to check the sql request for articles of last 7 days sorted by publications date and using index
       $('a[data-testid="internal-link"]').each((_, element) => {
         const $element = $(element);
         const title = $element.find('h2, h3').text().trim();
@@ -63,12 +53,12 @@ export class BbcScraperService {
             title,
             url,
             source: 'BBC News',
-            publicationDate: undefined,
+            publicationDate: this.generateRandomDate(), // tmp dummy date
           });
         }
       });
 
-      // Supprimer les doublons
+      // Remove duplicates
       const uniqueArticles = articles.filter(
         (article, index, self) =>
           index === self.findIndex((a) => a.url === article.url),
@@ -80,9 +70,7 @@ export class BbcScraperService {
       return uniqueArticles;
     } catch (error) {
       this.logger.error('Error scraping BBC News articles', error);
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to scrape BBC News: ${errorMessage}`);
+      throw new Error(`Failed to scrape BBC News: ${error?.message}`);
     }
   }
 }
