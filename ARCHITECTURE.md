@@ -1,13 +1,13 @@
-# Architecture du Projet News Scraper
+# News Scraper Project Architecture
 
-## Vue d'ensemble
+## Overview
 
 ```
 ┌────────────────────────────────────────────────┐
 │              APP MODULE                        │
 │  ┌────────────────────────────────────────┐    │
 │  │      GlobalExceptionFilter             │    │
-│  │   (Gestion centralisée des erreurs)    │    │
+│  │   (Centralized Error Handling)         │    │
 │  └────────────────────────────────────────┘    │
 └─────────────────────┬──────────────────────────┘
                       │
@@ -20,7 +20,7 @@
 └──────────┘  └──────────────┘  └─────────────┘
 ```
 
-## Structure détaillée des modules
+## Detailed Module Structure
 
 ### 1. Articles Module
 ```
@@ -31,7 +31,7 @@
 │  ┌────────────────────┐      ┌─────────────────┐                │
 │  │ ArticlesController │────▶│ ArticlesService │                │
 │  │                    │      │                 │                │
-│  │ GET /articles      │      │ - findAll()     │                │
+│  │ GET /articles      │      │ - find()        │                │
 │  └────────────────────┘      │ - create()      │                │
 │           │                  └─────────────────┘                │
 │           │                       │                             │
@@ -41,8 +41,8 @@
 │  │                   │    │                  │                  │
 │  │ - page?: string   │    │ - id: number     │                  │
 │  │ - limit?: string  │    │ - title: string  │                  │
-│  │ - source?: string │    │ - url: string    │                  │
-│  └───────────────────┘    │ - source: string │                  │
+│  └───────────────────┘    │ - url: string    │                  │
+│                           │ - source: string │                  │
 │                           │ - publicationDate│                  │
 │                           └──────────────────┘                  │
 │                                    │                            │
@@ -52,6 +52,12 @@
 │                           │ - articles[]    │                   │
 │                           │ - pagination    │                   │
 │                           └─────────────────┘                   │
+│                                                                 │
+│  Features:                                                      │
+│  • Filters articles from last 7 days automatically             │
+│  • Orders by publication date (DESC) with database index       │
+│  • Pagination with configurable page size (max 100)           │
+│  • Unit tests with comprehensive coverage                      │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -72,6 +78,8 @@
 │           │               │ BbcScraperService│                 │
 │           │               │                  │                 │
 │           │               │ - scrapeArticles │                 │
+│           │               │ - JSON extraction│                 │
+│           │               │ - __NEXT_DATA__  │                 │
 │           │               └──────────────────┘                 │
 │           │                        │                           │
 │           │                        │ uses                      │
@@ -93,6 +101,14 @@
 │  │ - status        │                                           │
 │  │ - message       │                                           │
 │  └─────────────────┘                                           │
+│                                                                │
+│  Advanced Features:                                            │
+│  • JSON data extraction from __NEXT_DATA__ instead of HTML    │
+│  • Real publication dates from article metadata               │
+│  • TypeScript interfaces for type safety                      │
+│  • Duplicate detection via unique constraint handling         │
+│  • Comprehensive error handling and logging                   │
+│  • Unit tests with mocked dependencies                        │
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -111,7 +127,7 @@
 │  │ Properties:      │                                           │
 │  │ - id             │                                           │
 │  │ - title          │                                           │
-│  │ - url            │                                           │
+│  │ - url (UNIQUE)   │                                           │
 │  │ - source         │                                           │
 │  │ - publicationDate│                                           │
 │  └──────────────────┘                                           │
@@ -121,11 +137,19 @@
 │  │  MySQL Database  │                                           │
 │  │                  │                                           │
 │  │ Table: articles  │                                           │
+│  │ • UNIQUE(url)    │                                           │
+│  │ • INDEX(pub_date)│                                           │
 │  └──────────────────┘                                           │
+│                                                                 │
+│  Optimizations:                                                 │
+│  • Unique constraint on URL prevents duplicates                │
+│  • Descending index on publication_date for fast queries       │
+│  • Sequelize ORM with TypeScript support                       │
+│  • Automatic timestamp handling                                │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Flux de données principal
+## Main Data Flow
 
 ### 1. Scraping Flow
 ```
@@ -135,13 +159,15 @@ Client ──POST /scrape──▶ ScrapingController
                          ScrapingService
                               │
                               ▼
-                        BbcScraperService ──scrape──▶ BBC Website
-                              │
-                              ▼
-                         ArticlesService ──save──▶ MySQL Database
-                              │
-                              ▼
-                        ScrapeResponseDto ──response──▶ Client
+                        BbcScraperService ──extract JSON──▶ BBC Website (__NEXT_DATA__)
+                              │                                    │
+                              │                                    ▼
+                              │                           Extract real timestamps
+                              ▼                                    │
+                         ArticlesService ──save with metadata──▶ MySQL Database
+                              │                                    │
+                              ▼                                    ▼
+                        ScrapeResponseDto ──response──▶ Client    Duplicate handling
 ```
 
 ### 2. Articles Retrieval Flow
@@ -149,13 +175,17 @@ Client ──POST /scrape──▶ ScrapingController
 Client ──GET /articles──▶ ArticlesController
                               │
                               ▼
-                         ArticlesService ──query──▶ MySQL Database
-                              │
-                              ▼
-                        GetArticlesResponseDto ──response──▶ Client
+                         ArticlesService ──optimized query──▶ MySQL Database
+                              │                                       │
+                              │                                       ▼
+                              │                              • Filter last 7 days
+                              │                              • Order by pub_date DESC
+                              │                              • Use database index
+                              ▼                                       │
+                        GetArticlesResponseDto ──response──▶ Client  ◀─┘
 ```
 
-## Gestion des erreurs
+## Error Handling
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -169,7 +199,8 @@ Client ──GET /articles──▶ ArticlesController
 │  │                 │    │                 │                    │
 │  │ - Status code   │    │ - Sequelize     │                    │
 │  │ - Message       │    │ - Scraping      │                    │
-│  └─────────────────┘    │ - General       │                    │
+│  └─────────────────┘    │ - Validation    │                    │
+│                         │ - General       │                    │
 │                         └─────────────────┘                    │
 │                                  │                             │
 │                                  ▼                             │
@@ -181,13 +212,20 @@ Client ──GET /articles──▶ ArticlesController
 │                         │ - timestamp     │                    │
 │                         │ - path          │                    │
 │                         └─────────────────┘                    │
+│                                                                │
+│  Special Handling:                                             │
+│  • SequelizeUniqueConstraintError → Duplicate detection       │
+│  • JSON parsing errors → Scraping failure response            │
+│  • Validation errors → 400 Bad Request with details           │
+│  • Database connection errors → 500 Internal Server Error     │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-## Technologies utilisées
+## Technologies Used
 
 - **Framework**: NestJS + TypeScript
-- **Base de données**: MySQL + Sequelize ORM
-- **Validation**: class-validator
-- **Web Scraping**: Axios + Cheerio
+- **Database**: MySQL + Sequelize ORM
+- **Validation**: class-validator + class-transformer
+- **Web Scraping**: Axios + JSON extraction (no HTML parsing)
+- **Testing**: Jest with comprehensive unit test coverage
 - **Architecture**: Standard NestJS (Controllers → Services → Models)

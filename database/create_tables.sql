@@ -18,7 +18,9 @@ CREATE TABLE IF NOT EXISTS articles (
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Table des articles scrapés depuis les sites de news';
 
+
 -- Créer un index sur la date de publication pour optimiser les requêtes
 CREATE INDEX idx_articles_publication_date_desc ON articles(publication_date DESC);
+
 -- Afficher la structure de la table créée
 DESCRIBE articles;

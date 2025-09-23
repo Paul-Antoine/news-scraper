@@ -1,74 +1,99 @@
-# Configuration Base de Données - News Scraper
+# Database Configuration - News Scraper
 
-Ce document explique comment configurer la base de données MySQL pour le projet News Scraper.
+This document explains how to configure the MySQL database for the News Scraper project.
 
-## Prérequis
+## Prerequisites
 
-- MySQL Server installé et démarré sur localhost:3306
-- Accès administrateur MySQL (utilisateur root)
+- MySQL Server installed and running on localhost:3306
+- MySQL administrator access (root user)
 
 ## Configuration
 
-### 1. Création de la base de données
+### 1. Database Creation
 
 ```sql
--- Créer la base de données
+-- Create the database
 CREATE DATABASE news_scraper
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
--- Vérifier la création
+-- Verify creation
 SHOW DATABASES;
 ```
 
-### 2. Création d'un utilisateur dédié
+### 2. Dedicated User Creation
 
 ```sql
--- Créer un utilisateur pour l'application
+-- Create a user for the application
 CREATE USER 'news_scraper_user'@'localhost' IDENTIFIED BY 'your_secure_password';
 
--- Accorder les privilèges nécessaires
+-- Grant necessary privileges
 GRANT SELECT, INSERT, UPDATE, DELETE ON news_scraper.* TO 'news_scraper_user'@'localhost';
 
--- Appliquer les modifications
+-- Apply changes
 FLUSH PRIVILEGES;
 ```
 
-### 3. Exécution du script de création des tables
+### 3. Table Creation Script
 
-Executer le script database/create_tables.sql
+Execute the SQL script provided in [create_tables.sql](create_tables.sql) to create the articles table with proper indexing.
 
-### 5. Vérification de l'installation
+### 4. Installation Verification
 
 ```sql
--- Vérifier que la table existe
+-- Verify table exists
 USE news_scraper;
 SHOW TABLES;
 
--- Vérifier la structure de la table
+-- Verify table structure
 DESCRIBE articles;
 
--- Vérifier les index
+-- Verify indexes
 SHOW INDEX FROM articles;
 ```
 
-## Structure de la Table `articles`
+## Table Structure: `articles`
 
-| Colonne | Type | Contraintes | Description |
+| Column | Type | Constraints | Description |
 |---------|------|-------------|-------------|
-| `id`    | INT  | AUTO_INCREMENT, PRIMARY KEY | Identifiant unique |
-| `title` | VARCHAR(500) | NOT NULL | Titre de l'article |
-| `url`   | VARCHAR(700) | NOT NULL, UNIQUE | URL de l'article |
-| `publication_date` | DATETIME | NULL | Date de publication |
-| `source` | VARCHAR(100) | NOT NULL | Site source (ex: "BBC News") |
+| `id`    | INT  | AUTO_INCREMENT, PRIMARY KEY | Unique identifier |
+| `title` | VARCHAR(500) | NOT NULL | Article title |
+| `url`   | VARCHAR(700) | NOT NULL, UNIQUE | Article URL |
+| `publication_date` | DATETIME | NULL | publication date from BBC metadata |
+| `source` | VARCHAR(100) | NOT NULL | Source website (e.g., "BBC News") |
 
-## Index Créés
+## Indexes Created
 
-- **PRIMARY KEY** sur `id`
-- **UNIQUE KEY** sur `url` (évite les doublons)
-- **INDEX** sur `publication_date` (optimise les requêtes par date de publication)
+- **PRIMARY KEY** on `id` 
+- **UNIQUE KEY** on `url` (prevents duplicate articles)
+- **INDEX** `idx_articles_publication_date_desc` on `publication_date DESC` (optimizes date-based queries)
 
-## Variables d'Environnement
+## Performance Optimizations
+
+The database schema is optimized for the application's main queries:
+
+1. **7-day article filtering with `idx_articles_publication_date_desc`**:
+   - **Why**: The application query articles from the last 7 days, ordered by publication date (newest first)
+   - **How**: The descending index on `publication_date` allows MySQL to:
+     - Quickly locate articles within the date range using the index B-tree structure
+     - Skip full table scans by using the index for `WHERE publication_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)`
+     - Avoid sorting overhead since data is already ordered in descending order in the index
+     - Return results in the correct order (`ORDER BY publication_date DESC`) without additional sorting
+   - **Performance gain**: Query execution time reduces from O(n) to O(log n) for filtering, and eliminates sorting costs
+
+2. **Duplicate prevention**: UNIQUE constraint on `url` prevents duplicate articles at the database level
+
+3. **UTF8MB4 charset**: Full Unicode support including emojis in article titles
+
+### Get recent articles (optimized with index)
+```sql
+SELECT * FROM articles
+WHERE publication_date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+AND publication_date IS NOT NULL
+ORDER BY publication_date DESC;
+```
+
+## Environment Variables
 
 ```env
 # Database Configuration

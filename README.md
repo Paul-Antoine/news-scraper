@@ -1,38 +1,37 @@
 # News Scraper
 
-Un service backend NestJS pour scraper les articles de BBC News et les stocker dans une base de données MySQL.
+A NestJS backend service to scrape BBC News articles and store them in a MySQL database.
 
-## 🚀 Fonctionnalités
+## 🚀 Features
 
-- **Scraping BBC News** : Extraction automatique des articles depuis BBC News
-- **Stockage MySQL** : Sauvegarde des articles avec gestion des doublons
-- **API REST** : Endpoints pour déclencher le scraping et récupérer les articles
-- **Validation** : DTOs avec validation automatique des données
-- **Gestion d'erreurs** : Exception filters globaux pour une gestion centralisée
-- **Pagination** : Support de la pagination pour la récupération des articles
+- **BBC News Scraping**: Article extraction from BBC News
+- **MySQL Storage**: Article persistence with duplicate detection
+- **REST API**: Endpoints to trigger scraping and retrieve articles with pagination
+- **Data Validation**: DTOs with validation
+- **Global Error Handling**: Centralized exception filters for consistent error management
 
-## 📋 Prérequis
+## 📋 Prerequisites
 
 - Node.js (v18+)
 - MySQL (v8.0+)
-- npm ou yarn
+- npm
 
 ## 🛠️ Installation
 
-1. **Cloner le projet**
+1. **Clone the project**
 ```bash
-git clone <repository-url>
+git clone https://github.com/Paul-Antoine/news-scraper.git
 cd news-scraper
 ```
 
-2. **Installer les dépendances**
+2. **Install dependencies**
 ```bash
 npm install
 ```
 
-3. **Configuration de la base de données**
-   - Créer une base de données MySQL nommée `news_scraper`
-   - Configurer les variables d'environnement (optionnel) :
+3. **Database configuration**
+   - Create a MySQL database named `news_scraper`
+   - Configure environment variables (optional):
    ```bash
    DB_HOST=localhost
    DB_PORT=3306
@@ -41,40 +40,32 @@ npm install
    DB_NAME=news_scraper
    ```
 
-4. **Créer la table articles**
-```sql
-CREATE TABLE articles (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  title VARCHAR(500) NOT NULL,
-  url VARCHAR(700) NOT NULL UNIQUE,
-  publication_date DATETIME NULL,
-  source VARCHAR(100) NOT NULL
-);
-```
+   For detailed database setup instructions, see [database/README.md](database/README.md).
 
-## 🎯 Utilisation
 
-### Démarrage du serveur
+## 🎯 Usage
+
+### Starting the server
 
 ```bash
-# Mode développement
+# Development mode
 npm run start:dev
 
-# Mode production
+# Production mode
 npm run build
 npm run start:prod
 ```
 
-Le serveur démarre sur `http://localhost:3000`
+The server starts on `http://localhost:3000`
 
 ### API Endpoints
 
-#### 1. Scraper les articles
+#### 1. Scrape articles
 ```bash
 POST /scrape
 ```
 
-**Réponse :**
+**Response:**
 ```json
 {
   "articles": [...],
@@ -86,24 +77,24 @@ POST /scrape
 }
 ```
 
-#### 2. Récupérer les articles
+#### 2. Get articles (last 7 days only)
 ```bash
 GET /articles?page=1&limit=10
 ```
 
-**Paramètres :**
-- `page` (optionnel) : Numéro de page (défaut: 1)
-- `limit` (optionnel) : Nombre d'articles par page (défaut: 10, max: 100)
+**Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Articles per page (default: 10, max: 100)
 
-**Réponse :**
+**Response:**
 ```json
 {
   "articles": [
     {
       "id": 1,
       "title": "Article Title",
-      "url": "https://...",
-      "source": "BBC",
+      "url": "https://www.bbc.com/news/...",
+      "source": "BBC News",
       "publicationDate": "2024-01-01T00:00:00.000Z"
     }
   ],
@@ -116,68 +107,88 @@ GET /articles?page=1&limit=10
 }
 ```
 
-## 🧪 Tests
+**Note:** The articles endpoint automatically filters articles from the last 7 days only, ordered by publication date (newest first).
+
+## 🧪 Testing
 
 ```bash
-# Tests unitaires
+# Unit tests
 npm run test
 
-# Tests e2e
+# Unit tests with watch mode
+npm run test:watch
+
+# E2E tests
 npm run test:e2e
 
-# Coverage
+# Test coverage
 npm run test:cov
+
+# Test debugging
+npm run test:debug
 ```
 
-## 🔧 Scripts disponibles
+## 🔧 Available Scripts
 
 ```bash
-npm run start:dev     # Démarrage en mode développement
-npm run start:debug   # Démarrage en mode debug
-npm run build         # Build pour production
-npm run lint          # Vérification du code avec ESLint
-npm run format        # Formatage avec Prettier
+npm run start:dev     # Start in development mode with watch
+npm run start:debug   # Start in debug mode with watch
+npm run build         # Build for production
+npm run start:prod    # Start production build
+npm run lint          # Code linting with ESLint
+npm run format        # Code formatting with Prettier
 ```
 
-## 📁 Structure du projet
+## 📁 Project Structure
 
 ```
 src/
-├── articles/           # Module articles
-│   ├── dto/           # DTOs de validation
-│   ├── articles.controller.ts
-│   ├── articles.service.ts
-│   └── articles.module.ts
-├── scraping/          # Module scraping
+├── articles/                    # Articles module
+│   ├── dto/                     # Data Transfer Objects
+│   │   ├── article-response.dto.ts
+│   │   └── get-articles-query.dto.ts
+│   ├── articles.controller.ts   # REST endpoints for articles
+│   ├── articles.service.ts      # Business logic for articles
+│   ├── articles.service.spec.ts # Unit tests
+│   └── articles.module.ts       # Module configuration
+├── scraping/                    # Scraping module
 │   ├── dto/
-│   ├── bbc-scraper.service.ts
-│   ├── scraping.controller.ts
-│   ├── scraping.service.ts
-│   └── scraping.module.ts
-├── database/          # Configuration et modèles
+│   │   └── scrape-response.dto.ts
+│   ├── bbc-scraper.service.ts   # BBC News scraper with JSON extraction
+│   ├── scraping.controller.ts   # REST endpoints for scraping
+│   ├── scraping.service.ts      # Orchestrates scraping and saving
+│   ├── scraping.service.spec.ts # Unit tests
+│   └── scraping.module.ts       # Module configuration
+├── database/                    # Database configuration
 │   └── models/
-│       └── article.model.ts
-├── common/            # Utilitaires partagés
-│   ├── filters/       # Exception filters
-│   └── interfaces/    # Interfaces communes
-└── app.module.ts      # Module principal
+│       └── article.model.ts     # Sequelize model for articles
+├── common/                      # Shared utilities
+│   ├── filters/                 # Global exception filters
+│   │   └── global-exception.filter.ts
+│   └── interfaces/              # Common interfaces
+│       └── article.interface.ts
+└── app.module.ts                # Main application module
 ```
 
-## 🛡️ Gestion d'erreurs
+## 🛡️ Error Handling
 
-Le projet inclut un système de gestion d'erreurs centralisé qui :
+The project includes a centralized error handling system that:
 
-- Mappe les erreurs Sequelize vers des codes HTTP appropriés
-- Gère les erreurs de scraping avec des messages utilisateur-friendly
-- Log toutes les erreurs pour le débogage
-- Retourne des réponses JSON standardisées
+- Maps Sequelize errors to appropriate HTTP status codes
+- Handles scraping errors with user-friendly messages
+- Logs all errors for debugging purposes
+- Returns standardized JSON error responses
+- Manages duplicate article detection via unique constraint errors
 
 ## 🔄 Architecture
 
-**Architecture NestJS standard** avec :
+**Standard NestJS Architecture** featuring:
 
-- **Controllers** : Gestion des routes HTTP
-- **Services** : Logique métier
-- **DTOs** : Validation et transformation des données
-- **Models** : Modèles Sequelize pour la base de données
-- **Filters** : Gestion centralisée des exceptions
+- **Controllers**: HTTP route handling and request/response management
+- **Services**: Business logic and data processing
+- **DTOs**: Data validation and transformation with class-validator
+- **Models**: Sequelize ORM models for database operations
+- **Filters**: Centralized exception handling
+- **Interfaces**: TypeScript type definitions for better code safety
+
+For detailed architecture diagrams and module interactions, see [ARCHITECTURE.md](ARCHITECTURE.md).

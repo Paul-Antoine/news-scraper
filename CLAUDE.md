@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a NestJS-based news scraper service designed to scrape articles from BBC News and store them in a MySQL database. The project follows hexagonal architecture (Ports & Adapters) principles and provide a senior-level code quality.
+This is a NestJS-based news scraper service designed to scrape articles from BBC News and store them in a MySQL database. The project follows standard NestJS architecture patterns and provides senior-level code quality with comprehensive unit testing.
 
 ## Core Commands
 
@@ -30,27 +30,32 @@ This is a NestJS-based news scraper service designed to scrape articles from BBC
 ### Technology Stack
 - **Framework**: NestJS with TypeScript
 - **Database**: MySQL (localhost:3306) with Sequelize ORM
-- **Architecture Pattern**: Hexagonal Architecture (Ports & Adapters)
+- **Architecture Pattern**: Standard NestJS (Controllers → Services → Models)
+- **Scraping**: Advanced JSON extraction using `__NEXT_DATA__` from BBC News pages
+- **Testing**: Jest unit tests with comprehensive coverage
 
 ### Project Structure
 - Standard NestJS structure with modules, controllers, and services
 - Source code in `src/` directory
 - Unit tests co-located with source files (*.spec.ts)
 - E2E tests in `test/` directory
+- Global exception filters for centralized error handling
 
-### Planned Features
-Based on PRD.md, the service will implement:
-- `POST /scrape` - Manual scraping of BBC News articles
-- `GET /articles` - Retrieve stored articles
-- Article model with: id, title, url, publication_date, source
+### Implemented Features
+- `POST /scrape` - Scrapes BBC News articles using JSON data extraction
+- `GET /articles` - Retrieves stored articles from last 7 days with pagination
+- Real publication date extraction from article metadata
+- Duplicate detection and handling
+- TypeScript interfaces for type safety
 
 ### Data Model
-MySQL table `articles`:
+MySQL table `articles` with optimized indexing:
 - id (AUTO_INCREMENT, PRIMARY KEY)
 - title (VARCHAR(500), NOT NULL)
 - url (VARCHAR(700), NOT NULL, UNIQUE)
 - publication_date (DATETIME, NULL)
 - source (VARCHAR(100), NOT NULL)
+- INDEX idx_articles_publication_date_desc (publication_date DESC)
 
 ## Development Guidelines
 
