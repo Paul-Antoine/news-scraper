@@ -7,7 +7,7 @@
 -- Utiliser la base de données news_scraper
 USE news_scraper;
 
--- Créer la table articles selon les spécifications du PRD
+-- Créer la table articles
 CREATE TABLE IF NOT EXISTS articles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(500) NOT NULL,
@@ -18,12 +18,9 @@ CREATE TABLE IF NOT EXISTS articles (
   COLLATE=utf8mb4_unicode_ci
   COMMENT='Table des articles scrapés depuis les sites de news';
 
--- Créer un index sur la source pour optimiser les requêtes
-CREATE INDEX idx_articles_source ON articles(source);
 
--- Créer un index sur la date de publication pour les requêtes temporelles
-CREATE INDEX idx_articles_publication_date ON articles(publication_date);
-
+-- Créer un index sur la date de publication pour optimiser les requêtes
+CREATE INDEX idx_articles_publication_date_desc ON articles(publication_date DESC);
 
 -- Afficher la structure de la table créée
 DESCRIBE articles;

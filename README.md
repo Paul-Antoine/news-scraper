@@ -1,98 +1,194 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# News Scraper
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS backend service to scrape BBC News articles and store them in a MySQL database.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## 🚀 Features
 
-## Description
+- **BBC News Scraping**: Article extraction from BBC News
+- **MySQL Storage**: Article persistence with duplicate detection
+- **REST API**: Endpoints to trigger scraping and retrieve articles with pagination
+- **Data Validation**: DTOs with validation
+- **Global Error Handling**: Centralized exception filters for consistent error management
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## 📋 Prerequisites
 
-## Project setup
+- Node.js (v18+)
+- MySQL (v8.0+)
+- npm
 
+## 🛠️ Installation
+
+1. **Clone the project**
 ```bash
-$ npm install
+git clone https://github.com/Paul-Antoine/news-scraper.git
+cd news-scraper
 ```
 
-## Compile and run the project
-
+2. **Install dependencies**
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install
 ```
 
-## Run tests
+3. **Database configuration**
+   - Create a MySQL database named `news_scraper`
+   - Configure environment variables (optional):
+   ```bash
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=news_scraper_user
+   DB_PASSWORD=your_password
+   DB_NAME=news_scraper
+   ```
+
+   For detailed database setup instructions, see [database/README.md](database/README.md).
+
+
+## 🎯 Usage
+
+### Starting the server
 
 ```bash
-# unit tests
-$ npm run test
+# Development mode
+npm run start:dev
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Production mode
+npm run build
+npm run start:prod
 ```
 
-## Deployment
+The server starts on `http://localhost:3000`
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+### API Endpoints
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+#### 1. Scrape articles
+```bash
+POST /scrape
+```
+
+**Response:**
+```json
+{
+  "articles": [...],
+  "count": 15,
+  "saved": 12,
+  "duplicates": 3,
+  "status": "success",
+  "message": "Successfully scraped 15 articles. Saved: 12, Duplicates: 3"
+}
+```
+
+#### 2. Get articles (last 7 days only)
+```bash
+GET /articles?page=1&limit=10
+```
+
+**Parameters:**
+- `page` (optional): Page number (default: 1)
+- `limit` (optional): Articles per page (default: 10, max: 100)
+
+**Response:**
+```json
+{
+  "articles": [
+    {
+      "id": 1,
+      "title": "Article Title",
+      "url": "https://www.bbc.com/news/...",
+      "source": "BBC News",
+      "publicationDate": "2024-01-01T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 100,
+    "pages": 10
+  }
+}
+```
+
+**Note:** The articles endpoint automatically filters articles from the last 7 days only, ordered by publication date (newest first).
+
+## 🧪 Testing
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# Unit tests
+npm run test
+
+# Unit tests with watch mode
+npm run test:watch
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+
+# Test debugging
+npm run test:debug
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## 🔧 Available Scripts
 
-## Resources
+```bash
+npm run start:dev     # Start in development mode with watch
+npm run start:debug   # Start in debug mode with watch
+npm run build         # Build for production
+npm run start:prod    # Start production build
+npm run lint          # Code linting with ESLint
+npm run format        # Code formatting with Prettier
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+## 📁 Project Structure
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```
+src/
+├── articles/                    # Articles module
+│   ├── dto/                     # Data Transfer Objects
+│   │   ├── article-response.dto.ts
+│   │   └── get-articles-query.dto.ts
+│   ├── articles.controller.ts   # REST endpoints for articles
+│   ├── articles.service.ts      # Business logic for articles
+│   ├── articles.service.spec.ts # Unit tests
+│   └── articles.module.ts       # Module configuration
+├── scraping/                    # Scraping module
+│   ├── dto/
+│   │   └── scrape-response.dto.ts
+│   ├── bbc-scraper.service.ts   # BBC News scraper with JSON extraction
+│   ├── scraping.controller.ts   # REST endpoints for scraping
+│   ├── scraping.service.ts      # Orchestrates scraping and saving
+│   ├── scraping.service.spec.ts # Unit tests
+│   └── scraping.module.ts       # Module configuration
+├── database/                    # Database configuration
+│   └── models/
+│       └── article.model.ts     # Sequelize model for articles
+├── common/                      # Shared utilities
+│   ├── filters/                 # Global exception filters
+│   │   └── global-exception.filter.ts
+│   └── interfaces/              # Common interfaces
+│       └── article.interface.ts
+└── app.module.ts                # Main application module
+```
 
-## Support
+## 🛡️ Error Handling
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+The project includes a centralized error handling system that:
 
-## Stay in touch
+- Maps Sequelize errors to appropriate HTTP status codes
+- Handles scraping errors with user-friendly messages
+- Logs all errors for debugging purposes
+- Returns standardized JSON error responses
+- Manages duplicate article detection via unique constraint errors
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+## 🔄 Architecture
 
-## License
+**Standard NestJS Architecture** featuring:
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- **Controllers**: HTTP route handling and request/response management
+- **Services**: Business logic and data processing
+- **DTOs**: Data validation and transformation with class-validator
+- **Models**: Sequelize ORM models for database operations
+- **Filters**: Centralized exception handling
+- **Interfaces**: TypeScript type definitions for better code safety
+
+For detailed architecture diagrams and module interactions, see [ARCHITECTURE.md](ARCHITECTURE.md).

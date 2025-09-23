@@ -21,25 +21,25 @@ export class Article extends Model<Article> {
     type: DataType.STRING(500),
     allowNull: false,
   })
-  title: string;
+  declare title: string;
 
   @Column({
     type: DataType.STRING(700),
     allowNull: false,
     unique: true,
   })
-  url: string;
+  declare url: string;
 
   @Column({
     type: DataType.DATE,
     allowNull: true,
     field: 'publication_date',
   })
-  publicationDate: Date | null;
+  declare publicationDate: Date | null;
 
   @Column({
     type: DataType.STRING(100),
     allowNull: false,
   })
-  source: string;
+  declare source: string;
 }
