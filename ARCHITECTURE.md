@@ -1,231 +1,221 @@
-# News Scraper Project Architecture
+# News Scraper Architecture
 
-## Overview
+This document provides a visual representation of the news scraper application architecture.
 
-```
-┌────────────────────────────────────────────────┐
-│              APP MODULE                        │
-│  ┌────────────────────────────────────────┐    │
-│  │      GlobalExceptionFilter             │    │
-│  │   (Centralized Error Handling)         │    │
-│  └────────────────────────────────────────┘    │
-└─────────────────────┬──────────────────────────┘
-                      │
-      ┌───────────────┼───────────────┐
-      │               │               │
-      ▼               ▼               ▼
-┌──────────┐  ┌──────────────┐  ┌─────────────┐
-│ARTICLES  │  │   SCRAPING   │  │  DATABASE   │
-│ MODULE   │  │   MODULE     │  │   MODULE    │
-└──────────┘  └──────────────┘  └─────────────┘
-```
+## System Overview
 
-## Detailed Module Structure
+```mermaid
+graph TB
+    User[User/Client] --> API[NestJS API Gateway]
+    API --> Controller[Controllers Layer]
+    Controller --> Service[Services Layer]
+    Service --> DB[(MySQL Database)]
+    Service --> BBC[BBC News Website]
 
-### 1. Articles Module
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      ARTICLES MODULE                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌────────────────────┐      ┌─────────────────┐                │
-│  │ ArticlesController │────▶│ ArticlesService │                │
-│  │                    │      │                 │                │
-│  │ GET /articles      │      │ - find()        │                │
-│  └────────────────────┘      │ - create()      │                │
-│           │                  └─────────────────┘                │
-│           │                       │                             │
-│           ▼                       ▼                             │
-│  ┌───────────────────┐    ┌──────────────────┐                  │
-│  │GetArticlesQueryDto│    │ Article Model    │                  │
-│  │                   │    │                  │                  │
-│  │ - page?: string   │    │ - id: number     │                  │
-│  │ - limit?: string  │    │ - title: string  │                  │
-│  └───────────────────┘    │ - url: string    │                  │
-│                           │ - source: string │                  │
-│                           │ - publicationDate│                  │
-│                           └──────────────────┘                  │
-│                                    │                            │
-│                           ┌─────────────────┐                   │
-│                           │GetArticlesResponseDto               │
-│                           │                 │                   │
-│                           │ - articles[]    │                   │
-│                           │ - pagination    │                   │
-│                           └─────────────────┘                   │
-│                                                                 │
-│  Features:                                                      │
-│  • Filters articles from last 7 days automatically             │
-│  • Orders by publication date (DESC) with database index       │
-│  • Pagination with configurable page size (max 100)           │
-│  • Unit tests with comprehensive coverage                      │
-└─────────────────────────────────────────────────────────────────┘
+    subgraph "NestJS Application"
+        API
+        Controller
+        Service
+        Filter[Global Exception Filter]
+    end
+
+    API --> Filter
+    Filter --> API
 ```
 
-### 2. Scraping Module
-```
-┌────────────────────────────────────────────────────────────────┐
-│                      SCRAPING MODULE                           │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  ┌──────────────────┐     ┌──────────────────┐                 │
-│  │ScrapingController│────▶│ ScrapingService  │                 │
-│  │                  │     │                  │                 │
-│  │ POST /scrape     │     │ - scrapeNews()   │                 │
-│  └──────────────────┘     └──────────────────┘                 │
-│           │                        │                           │
-│           │                        ▼                           │
-│           │               ┌──────────────────┐                 │
-│           │               │ BbcScraperService│                 │
-│           │               │                  │                 │
-│           │               │ - scrapeArticles │                 │
-│           │               │ - JSON extraction│                 │
-│           │               │ - __NEXT_DATA__  │                 │
-│           │               └──────────────────┘                 │
-│           │                        │                           │
-│           │                        │ uses                      │
-│           │                        ▼                           │
-│           │               ┌─────────────────┐                  │
-│           │               │ ArticlesService │                  │
-│           │               │                 │                  │
-│           │               │ - create()      │                  │
-│           │               └─────────────────┘                  │
-│           │                                                    │
-│           ▼                                                    │
-│  ┌─────────────────┐                                           │
-│  │ScrapeResponseDto│                                           │
-│  │                 │                                           │
-│  │ - articles[]    │                                           │
-│  │ - count: number │                                           │
-│  │ - saved: number │                                           │
-│  │ - duplicates    │                                           │
-│  │ - status        │                                           │
-│  │ - message       │                                           │
-│  └─────────────────┘                                           │
-│                                                                │
-│  Advanced Features:                                            │
-│  • JSON data extraction from __NEXT_DATA__ instead of HTML    │
-│  • Real publication dates from article metadata               │
-│  • TypeScript interfaces for type safety                      │
-│  • Duplicate detection via unique constraint handling         │
-│  • Comprehensive error handling and logging                   │
-│  • Unit tests with mocked dependencies                        │
-└────────────────────────────────────────────────────────────────┘
+## Detailed Application Architecture
+
+```mermaid
+graph TB
+    subgraph "NestJS Application"
+        subgraph "Controllers"
+            AppController[App Controller<br/>GET /]
+            ScrapingController[Scraping Controller<br/>POST /scrape]
+            ArticlesController[Articles Controller<br/>GET /articles]
+        end
+
+        subgraph "Services"
+            AppService[App Service]
+            ScrapingService[Scraping Service]
+            BBCScraperService[BBC Scraper Service]
+            ArticlesService[Articles Service]
+        end
+
+        subgraph "Data Layer"
+            ArticleModel[Article Model<br/>Sequelize ORM]
+        end
+
+        subgraph "Common"
+            GlobalFilter[Global Exception Filter]
+            ArticleInterface[Article Interface]
+        end
+
+        subgraph "DTOs"
+            ScrapeResponseDto[Scrape Response DTO]
+            ArticleResponseDto[Article Response DTO]
+            GetArticlesQueryDto[Get Articles Query DTO]
+        end
+    end
+
+    subgraph "External Systems"
+        BBC[BBC News Website<br/>JSON Data Extraction]
+        MySQL[(MySQL Database<br/>news_scraper)]
+    end
+
+    AppController --> AppService
+    ScrapingController --> ScrapingService
+    ArticlesController --> ArticlesService
+
+    ScrapingService --> BBCScraperService
+    ScrapingService --> ArticlesService
+    ArticlesService --> ArticleModel
+
+    BBCScraperService --> BBC
+    ArticleModel --> MySQL
+
+    GlobalFilter -.-> AppController
+    GlobalFilter -.-> ScrapingController
+    GlobalFilter -.-> ArticlesController
 ```
 
-### 3. Database Module
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      DATABASE MODULE                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────┐                                           │
-│  │ Article Model    │                                           │
-│  │                  │                                           │
-│  │ @Table           │                                           │
-│  │ @Column          │                                           │
-│  │                  │                                           │
-│  │ Properties:      │                                           │
-│  │ - id             │                                           │
-│  │ - title          │                                           │
-│  │ - url (UNIQUE)   │                                           │
-│  │ - source         │                                           │
-│  │ - publicationDate│                                           │
-│  └──────────────────┘                                           │
-│           │                                                     │
-│           ▼                                                     │
-│  ┌──────────────────┐                                           │
-│  │  MySQL Database  │                                           │
-│  │                  │                                           │
-│  │ Table: articles  │                                           │
-│  │ • UNIQUE(url)    │                                           │
-│  │ • INDEX(pub_date)│                                           │
-│  └──────────────────┘                                           │
-│                                                                 │
-│  Optimizations:                                                 │
-│  • Unique constraint on URL prevents duplicates                │
-│  • Descending index on publication_date for fast queries       │
-│  • Sequelize ORM with TypeScript support                       │
-│  • Automatic timestamp handling                                │
-└─────────────────────────────────────────────────────────────────┘
+## Module Dependencies
+
+```mermaid
+graph TB
+    AppModule[App Module] --> ConfigModule[Config Module]
+    AppModule --> SequelizeModule[Sequelize Module]
+    AppModule --> DatabaseModule[Database Module]
+    AppModule --> ScrapingModule[Scraping Module]
+    AppModule --> ArticlesModule[Articles Module]
+
+    ScrapingModule --> ScrapingController
+    ScrapingModule --> ScrapingService
+    ScrapingModule --> BBCScraperService
+    ScrapingModule --> ArticlesModule
+
+    ArticlesModule --> ArticlesController
+    ArticlesModule --> ArticlesService
+    ArticlesModule --> DatabaseModule
+
+    DatabaseModule --> ArticleModel
+
+    style AppModule fill:#e1f5fe
+    style ScrapingModule fill:#f3e5f5
+    style ArticlesModule fill:#e8f5e8
+    style DatabaseModule fill:#fff3e0
 ```
 
-## Main Data Flow
+## Data Flow - Scraping Process
 
-### 1. Scraping Flow
-```
-Client ──POST /scrape──▶ ScrapingController
-                              │
-                              ▼
-                         ScrapingService
-                              │
-                              ▼
-                        BbcScraperService ──extract JSON──▶ BBC Website (__NEXT_DATA__)
-                              │                                    │
-                              │                                    ▼
-                              │                           Extract real timestamps
-                              ▼                                    │
-                         ArticlesService ──save with metadata──▶ MySQL Database
-                              │                                    │
-                              ▼                                    ▼
-                        ScrapeResponseDto ──response──▶ Client    Duplicate handling
-```
+```mermaid
+sequenceDiagram
+    participant Client
+    participant ScrapingController
+    participant ScrapingService
+    participant BBCScraperService
+    participant ArticlesService
+    participant MySQL
+    participant BBC
 
-### 2. Articles Retrieval Flow
-```
-Client ──GET /articles──▶ ArticlesController
-                              │
-                              ▼
-                         ArticlesService ──optimized query──▶ MySQL Database
-                              │                                       │
-                              │                                       ▼
-                              │                              • Filter last 7 days
-                              │                              • Order by pub_date DESC
-                              │                              • Use database index
-                              ▼                                       │
-                        GetArticlesResponseDto ──response──▶ Client  ◀─┘
+    Client->>ScrapingController: POST /scrape
+    ScrapingController->>ScrapingService: scrapeNews()
+    ScrapingService->>BBCScraperService: scrapeArticles()
+    BBCScraperService->>BBC: Fetch homepage
+    BBC-->>BBCScraperService: HTML with __NEXT_DATA__
+    BBCScraperService->>BBCScraperService: Extract JSON data
+    BBCScraperService->>BBCScraperService: Parse articles
+    BBCScraperService-->>ScrapingService: Article[]
+
+    loop For each article
+        ScrapingService->>ArticlesService: saveArticle()
+        ArticlesService->>MySQL: INSERT/UPDATE article
+        MySQL-->>ArticlesService: Result
+        ArticlesService-->>ScrapingService: Saved article
+    end
+
+    ScrapingService-->>ScrapingController: ScrapeResponseDto
+    ScrapingController-->>Client: Response with stats
 ```
 
-## Error Handling
+## Data Flow - Articles Retrieval
 
-```
-┌────────────────────────────────────────────────────────────────┐
-│                 GlobalExceptionFilter                          │
-├────────────────────────────────────────────────────────────────┤
-│                                                                │
-│  Exception Types:                                              │
-│                                                                │
-│  ┌─────────────────┐    ┌─────────────────┐                    │
-│  │  HttpException  │    │  Error Types    │                    │
-│  │                 │    │                 │                    │
-│  │ - Status code   │    │ - Sequelize     │                    │
-│  │ - Message       │    │ - Scraping      │                    │
-│  └─────────────────┘    │ - Validation    │                    │
-│                         │ - General       │                    │
-│                         └─────────────────┘                    │
-│                                  │                             │
-│                                  ▼                             │
-│                         ┌─────────────────┐                    │
-│                         │ Error Response  │                    │
-│                         │                 │                    │
-│                         │ - statusCode    │                    │
-│                         │ - message       │                    │
-│                         │ - timestamp     │                    │
-│                         │ - path          │                    │
-│                         └─────────────────┘                    │
-│                                                                │
-│  Special Handling:                                             │
-│  • SequelizeUniqueConstraintError → Duplicate detection       │
-│  • JSON parsing errors → Scraping failure response            │
-│  • Validation errors → 400 Bad Request with details           │
-│  • Database connection errors → 500 Internal Server Error     │
-└────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant Client
+    participant ArticlesController
+    participant ArticlesService
+    participant MySQL
+
+    Client->>ArticlesController: GET /articles?page=1&limit=10
+    ArticlesController->>ArticlesController: Validate query params
+    ArticlesController->>ArticlesService: find({page, limit})
+    ArticlesService->>MySQL: SELECT with pagination
+    MySQL-->>ArticlesService: Article records
+    ArticlesService->>ArticlesService: Format response
+    ArticlesService-->>ArticlesController: GetArticlesResponseDto
+    ArticlesController-->>Client: Paginated articles
 ```
 
-## Technologies Used
+## Database Schema
 
-- **Framework**: NestJS + TypeScript
-- **Database**: MySQL + Sequelize ORM
-- **Validation**: class-validator + class-transformer
-- **Web Scraping**: Axios + JSON extraction (no HTML parsing)
-- **Testing**: Jest with comprehensive unit test coverage
-- **Architecture**: Standard NestJS (Controllers → Services → Models)
+```mermaid
+erDiagram
+    ARTICLES {
+        int id PK "AUTO_INCREMENT"
+        varchar title "VARCHAR(500) NOT NULL"
+        varchar url "VARCHAR(700) NOT NULL UNIQUE"
+        datetime publication_date "DATETIME NULL"
+        varchar source "VARCHAR(100) NOT NULL"
+    }
+
+    ARTICLES ||--o{ INDEX_publication_date : "idx_articles_publication_date_desc"
+```
+
+## Technology Stack
+
+```mermaid
+graph TB
+    subgraph "Backend Framework"
+        NestJS[NestJS<br/>TypeScript Framework]
+    end
+
+    subgraph "Database"
+        MySQL[(MySQL<br/>Relational Database)]
+        Sequelize[Sequelize<br/>ORM]
+    end
+
+    subgraph "Development Tools"
+        Jest[Jest<br/>Testing Framework]
+        ESLint[ESLint<br/>Linting]
+        Prettier[Prettier<br/>Code Formatting]
+    end
+
+    subgraph "External APIs"
+        BBCAPI[BBC News<br/>JSON Data Extraction]
+    end
+
+    NestJS --> Sequelize
+    Sequelize --> MySQL
+    NestJS --> BBCAPI
+    NestJS -.-> Jest
+    NestJS -.-> ESLint
+    NestJS -.-> Prettier
+```
+
+## API Endpoints
+
+| Method | Endpoint | Description | Response |
+|--------|----------|-------------|----------|
+| GET | `/` | Health check | App status |
+| POST | `/scrape` | Trigger news scraping | Scraping results |
+| GET | `/articles` | Retrieve articles | Paginated articles list |
+
+## Key Features
+
+- **Advanced Scraping**: Extracts data from `__NEXT_DATA__` JSON embedded in BBC News pages
+- **Duplicate Prevention**: URL-based uniqueness constraint prevents duplicate articles
+- **Real Publication Dates**: Extracts actual publication timestamps from article metadata
+- **Pagination Support**: Efficient pagination with configurable page size limits
+- **Type Safety**: Comprehensive TypeScript interfaces and DTOs
+- **Error Handling**: Global exception filter for centralized error management
+- **Testing**: Unit tests with Jest for all major components
